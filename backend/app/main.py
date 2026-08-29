@@ -229,3 +229,31 @@ def analyze_quality():
             "has_gitignore": has_gitignore
         }
     }
+@app.get("/analyze/baseline")
+def analyze_baseline():
+    project_root = Path(__file__).resolve().parents[2]
+
+    total_files = 0
+    python_files = 0
+    directories = set()
+
+    for item in project_root.rglob("*"):
+        if item.name.startswith("."):
+            continue
+
+        if item.is_dir():
+            directories.add(str(item.relative_to(project_root)))
+
+        elif item.is_file():
+            total_files += 1
+
+            if item.suffix == ".py":
+                python_files += 1
+
+    return {
+        "repository_name": project_root.name,
+        "total_files": total_files,
+        "total_directories": len(directories),
+        "python_files": python_files,
+        "analysis_type": "basic_baseline"
+    }
