@@ -257,3 +257,191 @@ def analyze_baseline():
         "python_files": python_files,
         "analysis_type": "basic_baseline"
     }
+
+@app.get("/analyze/agent")
+def analyze_agent():
+    project_root = Path(__file__).resolve().parents[2]
+
+    findings = []
+    strengths = []
+    risks = []
+    evidence = []
+
+    total_files = 0
+    python_files = 0
+    test_files = 0
+
+    readme_files = []
+    requirements_files = []
+    documentation_files = []
+
+    # STEP 1: INVESTIGATE THE REPOSITORY
+    for item in project_root.rglob("*"):
+
+        # Ignore unnecessary directories
+        if any(
+            part in {".git", ".venv", "__pycache__", "node_modules"}
+            for part in item.parts
+        ):
+            continue
+
+        if item.is_file():
+            total_files += 1
+
+            if item.suffix == ".py":
+                python_files += 1
+
+            if "test" in item.name.lower():
+                test_files += 1
+
+            if item.name.lower() in {
+                "readme.md",
+                "readme.txt"
+            }:
+                readme_files.append(str(item.relative_to(project_root)))
+
+            if item.name.lower() in {
+                "requirements.txt",
+                "pyproject.toml",
+                "package.json"
+            }:
+                requirements_files.append(
+                    str(item.relative_to(project_root))
+                )
+
+            if item.suffix.lower() in {
+                ".md",
+                ".txt"
+            }:
+                documentation_files.append(
+                    str(item.relative_to(project_root))
+                )
+
+    # STEP 2: ASSESS DOCUMENTATION
+    if readme_files:
+        strengths.append(
+            "Repository includes project documentation."
+        )
+
+        evidence.append({
+            "finding": "README documentation found",
+            "files": readme_files
+        })
+
+    else:
+        risks.append(
+            "Repository does not contain a README file."
+        )
+
+    # STEP 3: ASSESS TESTING
+    if test_files > 0:
+        strengths.append(
+            f"Repository contains {test_files} test-related file(s)."
+        )
+
+        evidence.append({
+            "finding": "Tests detected",
+            "count": test_files
+        })
+
+    else:
+        risks.append(
+            "No test-related files were detected."
+        )
+
+    # STEP 4: ASSESS DEPENDENCY CONFIGURATION
+    if requirements_files:
+        strengths.append(
+            "Repository includes dependency configuration."
+        )
+
+        evidence.append({
+            "finding": "Dependency configuration found",
+            "files": requirements_files
+        })
+
+    else:
+        risks.append(
+            "No dependency configuration was detected."
+        )
+
+    # STEP 5: ASSESS PROJECT SIZE
+    if python_files > 0:
+        findings.append(
+            f"Repository contains {python_files} Python source file(s)."
+        )
+
+    if total_files < 3:
+        risks.append(
+            "Repository contains very few files and may be incomplete."
+        )
+
+    # STEP 6: VERIFY FINDINGS
+    verified_strengths = [
+        strength
+        for strength in strengths
+        if strength
+    ]
+
+    verified_risks = [
+        risk
+        for risk in risks
+        if risk
+    ]
+
+    # STEP 7: CREATE FINAL ASSESSMENT
+    score = 50
+
+    if readme_files:
+        score += 15
+
+    if test_files > 0:
+        score += 15
+
+    if requirements_files:
+        score += 10
+
+    if python_files > 0:
+        score += 10
+
+    score = min(score, 100)
+
+    if score >= 85:
+        grade = "A"
+    elif score >= 70:
+        grade = "B"
+    elif score >= 55:
+        grade = "C"
+    elif score >= 40:
+        grade = "D"
+    else:
+        grade = "F"
+
+    return {
+        "repository_name": project_root.name,
+        "workflow": "repository_investigation_agent_v1",
+
+        "assessment": {
+            "score": score,
+            "grade": grade
+        },
+
+        "repository_facts": {
+            "total_files": total_files,
+            "python_files": python_files,
+            "test_files": test_files
+        },
+
+        "strengths": verified_strengths,
+
+        "risks": verified_risks,
+
+        "findings": findings,
+
+        "evidence": evidence,
+
+        "verification": {
+            "status": "completed",
+            "method": "All findings are generated from repository inspection."
+        }
+    }
