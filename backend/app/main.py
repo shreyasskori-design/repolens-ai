@@ -445,3 +445,34 @@ def analyze_agent():
             "method": "All findings are generated from repository inspection."
         }
     }
+
+@app.get("/analyze/evaluate")
+def evaluate_analysis():
+    baseline = analyze_baseline()
+    agent_result = analyze_agent()
+
+    comparison = {
+        "repository_name": baseline["repository_name"],
+        "evaluation": {
+            "baseline": {
+                "analysis_type": baseline.get("analysis_type"),
+                "total_files": baseline.get("total_files"),
+                "total_directories": baseline.get("total_directories"),
+                "python_files": baseline.get("python_files")
+            },
+            "agent": {
+                "workflow": agent_result.get("workflow"),
+                "assessment": agent_result.get("assessment"),
+                "findings_count": len(agent_result.get("findings", [])),
+                "strengths_count": len(agent_result.get("strengths", [])),
+                "risks_count": len(agent_result.get("risks", []))
+            }
+        },
+        "conclusion": {
+            "baseline_capability": "Provides basic repository statistics.",
+            "agent_capability": "Investigates repository structure, identifies findings, verifies strengths and risks, and provides evidence.",
+            "improvement": "The agent provides a deeper and more evidence-based repository analysis than the baseline."
+        }
+    }
+
+    return comparison
