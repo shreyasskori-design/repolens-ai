@@ -89,3 +89,44 @@ def analyze_structure():
         "documentation_files": documentation_files,
         "configuration_files": config_files
     }
+@app.get("/analyze/summary")
+def analyze_summary():
+    project_root = Path(__file__).resolve().parents[2]
+
+    ignored_dirs = {".venv", ".git", "__pycache__", "node_modules"}
+
+    total_files = 0
+    total_directories = 0
+    python_files = 0
+    has_documentation = False
+    has_tests = False
+
+    for item in project_root.rglob("*"):
+        if any(part in ignored_dirs for part in item.parts):
+            continue
+
+        if item.is_dir():
+            total_directories += 1
+
+            if item.name.lower() in {"tests", "test"}:
+                has_tests = True
+
+        elif item.is_file():
+            total_files += 1
+
+            if item.suffix == ".py":
+                python_files += 1
+
+            if item.suffix.lower() in {".md", ".txt"}:
+                has_documentation = True
+
+    primary_language = "Python" if python_files > 0 else "Unknown"
+
+    return {
+        "repository_name": project_root.name,
+        "total_files": total_files,
+        "total_directories": total_directories,
+        "primary_language": primary_language,
+        "has_documentation": has_documentation,
+        "has_tests": has_tests
+    }
