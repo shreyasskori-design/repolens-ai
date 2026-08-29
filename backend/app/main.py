@@ -130,3 +130,102 @@ def analyze_summary():
         "has_documentation": has_documentation,
         "has_tests": has_tests
     }
+@app.get("/analyze/quality")
+def analyze_quality():
+    project_root = Path(__file__).resolve().parents[2]
+
+    total_files = 0
+    python_files = 0
+    has_readme = False
+    has_tests = False
+    has_requirements = False
+    has_gitignore = False
+
+    ignored_dirs = {".venv", ".git", "__pycache__", "node_modules"}
+
+    for item in project_root.rglob("*"):
+        if any(part in ignored_dirs for part in item.parts):
+            continue
+
+        if item.is_file():
+            total_files += 1
+
+            if item.suffix == ".py":
+                python_files += 1
+
+            if item.name.lower() == "readme.md":
+                has_readme = True
+
+            if item.name.lower() == "requirements.txt":
+                has_requirements = True
+
+            if item.name.lower() == ".gitignore":
+                has_gitignore = True
+
+        if item.is_dir() and item.name.lower() in {"tests", "test"}:
+            has_tests = True
+
+    quality_score = 0
+    strengths = []
+    risks = []
+
+    if has_readme:
+        quality_score += 20
+        strengths.append("Repository documentation is available")
+    else:
+        risks.append("README documentation is missing")
+
+    if has_tests:
+        quality_score += 20
+        strengths.append("Test structure is available")
+    else:
+        risks.append("No dedicated test directory found")
+
+    if has_requirements:
+        quality_score += 15
+        strengths.append("Dependency configuration is available")
+    else:
+        risks.append("Dependency configuration is missing")
+
+    if has_gitignore:
+        quality_score += 10
+        strengths.append("Git ignore configuration is available")
+    else:
+        risks.append(".gitignore file is missing")
+
+    if python_files > 0:
+        quality_score += 20
+        strengths.append(f"Repository contains {python_files} Python source files")
+    else:
+        risks.append("No Python source files found")
+
+    if total_files >= 5:
+        quality_score += 15
+        strengths.append("Repository has a meaningful project structure")
+    else:
+        risks.append("Repository contains very few files")
+
+    if quality_score >= 80:
+        grade = "A"
+    elif quality_score >= 60:
+        grade = "B"
+    elif quality_score >= 40:
+        grade = "C"
+    else:
+        grade = "D"
+
+    return {
+        "repository_name": project_root.name,
+        "quality_score": quality_score,
+        "grade": grade,
+        "strengths": strengths,
+        "risks": risks,
+        "evidence": {
+            "total_files": total_files,
+            "python_files": python_files,
+            "has_readme": has_readme,
+            "has_tests": has_tests,
+            "has_requirements": has_requirements,
+            "has_gitignore": has_gitignore
+        }
+    }
