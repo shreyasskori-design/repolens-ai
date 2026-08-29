@@ -1,42 +1,18 @@
 from fastapi import FastAPI
+from pathlib import Path
 from collections import Counter
 
 app = FastAPI(
-    title="RepoLens AI",
-    description="Repository Intelligence Platform for analyzing software repositories.",
-    version="1.0.0"
+    title="Repolens AI",
+    description="An autonomous repository intelligence platform for engineering teams.",
+    version="0.1.0"
 )
 
 
 @app.get("/")
 def root():
     return {
-        "message": "Welcome to RepoLens AI",
-        "status": "Backend is running successfully"
-    }
-
-
-@app.get("/health")
-def health_check():
-    return {
-        "status": "healthy"
-    }
-
-from fastapi import FastAPI
-from pathlib import Path
-
-app = FastAPI(
-    title="RepoLens AI",
-    description="Repository Intelligence Platform for analyzing software repositories.",
-    version="1.0.0"
-)
-
-
-@app.get("/")
-def root():
-    return {
-        "message": "Welcome to RepoLens AI",
-        "status": "Backend is running successfully"
+        "message": "Welcome to Repolens AI"
     }
 
 
@@ -47,53 +23,17 @@ def health_check():
     }
 
 
-@app.get("/analyze")
-def analyze_repository():
-    project_root = Path(__file__).resolve().parents[2]
-
-    folders = []
-    files = []
-
-    for item in project_root.iterdir():
-        if item.is_dir():
-            folders.append(item.name)
-        elif item.is_file():
-            files.append(item.name)
-
-    return {
-        "repository_name": project_root.name,
-        "folders": folders,
-        "files": files,
-        "total_folders": len(folders),
-        "total_files": len(files)
-    }
-@app.get("/analyze/details")
-def analyze_details():
-    project_root = Path(__file__).resolve().parents[2]
-
-    structure = []
-
-    for item in project_root.iterdir():
-        structure.append({
-            "name": item.name,
-            "type": "directory" if item.is_dir() else "file"
-        })
-
-    return {
-        "repository_name": project_root.name,
-        "items": structure
-    }
 @app.get("/analyze/stats")
 def analyze_stats():
     project_root = Path(__file__).resolve().parents[2]
 
-    extensions = Counter()
     total_files = 0
+    extensions = Counter()
 
-    excluded_dirs = {".venv", ".git", "__pycache__"}
+    ignored_dirs = {".venv", ".git", "__pycache__", "node_modules"}
 
     for item in project_root.rglob("*"):
-        if any(part in excluded_dirs for part in item.parts):
+        if any(part in ignored_dirs for part in item.parts):
             continue
 
         if item.is_file():
@@ -107,4 +47,3 @@ def analyze_stats():
         "total_files": total_files,
         "file_types": dict(extensions)
     }
-  
